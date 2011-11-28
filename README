@@ -1,0 +1,16 @@
+
+This is a script for updating LED signs made by amplus.
+
+It is based on the toledo.py script written by Christian Sullivan (hanzo@freezerpants.com)
+A copy of his script is included in the directory toledo, but you can download his latest version
+at his website: http://freezerpants.com/toledo
+
+WHY REWRITING HIS PROGRAM ?
+
+The original script has a heavy dependency for embedded devices like the WRT54GL: python.
+By rewriting his script as a shell script, i can abuse the busybox shell with no external dependency,
+while keeping a small footprint.
+
+At the moment it is unusable, but the logic is being built.
+
+Stay tuned...
