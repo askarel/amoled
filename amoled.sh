@@ -205,6 +205,24 @@ serialoutput ()
     echo $2 > $1
 }
 
+usage ()
+{
+ echo " Usage: $ME [options] message
+ 
+    -id		Sign ID (0 is broadcast, default ID is 1)
+    -p		Page number (A-Z)
+    -i 		Define the opening animation of the page (use -i help for options)
+    -w		wait time, from 0 (0.5 seconds) to 25 seconds. Default is 4
+    -o		Define the closing animation of the page (use -o help for options)
+    -flush	Flush sign memory
+    -setdate	Set the internal clock of the sign using system clock
+    -port	Serial port to use. Default is /dev/ttyUSB0. Use - for stdout.
+    -link	Link pages together for immediate display
+"
+}
+
+# TODO: Figure out how getopts() works.
+usage
 preparedataforsign "$1" "$(makepage $2 $3 $4 $5 $6 $7 $8)"
 echo
 
