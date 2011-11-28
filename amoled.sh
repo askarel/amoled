@@ -17,6 +17,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# WARNING: because the script use mathematical expressions and string manipulations,
+# WARNING: it will run only with bash or busybox ash.
+
 
 ME=$(basename $0)
 # Function to call when we bail out
@@ -117,7 +120,7 @@ introtag ()
 }
 
 
-outtrotag ()
+outrotag ()
 {
     case $1 in
 	immediate)
@@ -157,7 +160,7 @@ outtrotag ()
 	    echo -n "<F$1>"
 	    ;;
 	*)
-	    die "Valid outtro commands: immediate, xopen, curtainup, curtaindown, scrollleft, 
+	    die "Valid outro commands: immediate, xopen, curtainup, curtaindown, scrollleft, 
 	    scrollright, vopen, vclose, scrollup, scrolldown, hold"
 	    ;;  
     esac
@@ -167,6 +170,7 @@ waittime ()
 {
     printf "<W\\$(printf '%3o' $(( $1 + 65 )))>"
 }
+
 #Parameter list:
 # 1: <Ln> line number (1-9)
 # 2: <Pn> Page number (A-Z)
@@ -177,7 +181,7 @@ waittime ()
 
 makepage ()
 {
-    echo
+    echo -n "<L$1><P$2>$(introtag $3)<M$4>$(waittime $5)$(outrotag $6)$7"
 }
 
 
@@ -201,8 +205,7 @@ serialoutput ()
     echo $2 > $1
 }
 
-waittime $2
-preparedataforsign "$1" "$(waittime $2) $3"
+preparedataforsign "$1" "$(makepage $2 $3 $4 $5 $6 $7 $8)"
 echo
 
 
