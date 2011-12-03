@@ -17,11 +17,58 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# WARNING: because the script use mathematical expressions and string manipulations,
-# WARNING: it will run only with bash or busybox ash.
+# WARNING: because the script use arrays, mathematical expressions and string
+# WARNING: manipulations, it will run only with bash or busybox ash.
 
+# Available sign effects
+SEFFECT[1]="<FA>|immediate"
+SEFFECT[2]="<FB>|xopen"
+SEFFECT[3]="<FC>|curtainup"
+SEFFECT[4]="<FD>|curtaindown"
+SEFFECT[5]="<FE>|scrollleft"
+SEFFECT[6]="<FF>|scrollright"
+SEFFECT[7]="<FG>|vopen"
+SEFFECT[8]="<FH>|vclose"
+SEFFECT[9]="<FI>|scrollup"
+SEFFECT[10]="<FJ>|scrolldown"
+SEFFECT[11]="<FK>|hold"
+SEFFECT[12]="<FL>|snow"			# open only
+SEFFECT[13]="<FM>|twinkle"		# open only
+SEFFECT[14]="<FN>|blockmove"		# open only
+SEFFECT[15]="<FP>|random"		# open only
+SEFFECT[16]="<FQ>|penwritehello"	# open only
+SEFFECT[17]="<FR>|penwritewelcome"	# open only
+SEFFECT[18]="<FS>|penwriteam"		# open only
 
+# Available sign colors
+SCOLOR[1]="<CA>|dimred"
+SCOLOR[2]="<CB>|red"
+SCOLOR[3]="<CC>|brightred"
+SCOLOR[4]="<CD>|dimgreen"
+SCOLOR[5]="<CE>|green"
+SCOLOR[6]="<CF>|brightgreen"
+SCOLOR[7]="<CG>|dimorange"
+SCOLOR[8]="<CH>|orange"
+SCOLOR[9]="<CI>|brightorange"
+SCOLOR[10]="<CJ>|yellow"
+SCOLOR[11]="<CK>|lime"
+SCOLOR[12]="<CL>|inversered"
+SCOLOR[13]="<CM>|inversegreen"
+SCOLOR[14]="<CN>|inverseorange"
+SCOLOR[15]="<CP>|redongreen"
+SCOLOR[16]="<CQ>|greenonred"
+SCOLOR[17]="<CR>|RYG"
+SCOLOR[18]="<CS>|rainbow"
+
+# some default values
 ME=$(basename $0)
+SERIALPORT="/dev/ttyUSB0"
+WTIME="4"
+ADDR="1"
+SLINE="1"
+#INTROTAG=$(gettag "${SEFFECT[$(( $RANDOM % 18 +1))]}")
+
+
 # Function to call when we bail out
 die ()
 {
@@ -32,7 +79,6 @@ die ()
 	exit $2
     fi
 }
-
 
 # The *nix date command can format its output to match what the
 # sign expect. Use it. :-)
@@ -48,69 +94,49 @@ resetsign ()
     echo -n '<D*>'
 }
 
+# For how long should the page stay ? 
+# A=0.5 second, Z=25 seconds.
+# We will cheat the user and use 0 to mean 0.5 :-)
+waittime ()
+{
+    printf "<W\\$(printf '%3o' $(( $1 + 65 )))>"
+}
+
+gettag ()
+{
+    echo -n "$1"|cut -d '|' -f 1
+}
+
+gettagtext ()
+{
+    echo -n "$1"|cut -d '|' -f 2
+}
+
 introtag ()
 {
     case $1 in
-	immediate)
-	    echo -n "<FA>"
-	    ;;
-	xopen)
-	    echo -n "<FB>"
-	    ;;
-	curtainup)
-	    echo -n "<FC>"
-	    ;;
-	curtaindown)
-	    echo -n "<FD>"
-	    ;;
-	scrollleft)
-	    echo -n "<FE>"
-	    ;;
-	scrollright)
-	    echo -n "<FF>"
-	    ;;
-	vopen)
-	    echo -n "<FG>"
-	    ;;
-	vclose)
-	    echo -n "<FH>"
-	    ;;
-	scrollup)
-	    echo -n "<FI>"
-	    ;;
-	scrolldown)
-	    echo -n "<FJ>"
-	    ;;
-	hold)
-	    echo -n "<FK>"
-	    ;;
-	snow)
-	    echo -n "<FL>"
-	    ;;
-	twinkle)
-	    echo -n "<FM>"
-	    ;;
-	blockmove)
-	    echo -n "<FN>"
-	    ;;
-	random)
-	    echo -n "<FP>"
-	    ;;
-	penwritehello)
-	    echo -n "<FQ>"
-	    ;;
-	penwritewelcome)
-	    echo -n "<FR>"
-	    ;;
-	penwriteam)
-	    echo -n "<FS>"
-	    ;;
+	immediate)	echo -n "<FA>"    ;;
+	xopen)		echo -n "<FB>"    ;;
+	curtainup)	echo -n "<FC>"    ;;
+	curtaindown)	echo -n "<FD>"    ;;
+	scrollleft)	echo -n "<FE>"    ;;
+	scrollright)	echo -n "<FF>"    ;;
+	vopen)		echo -n "<FG>"    ;;
+	vclose)		echo -n "<FH>"    ;;
+	scrollup)	echo -n "<FI>"    ;;
+	scrolldown)	echo -n "<FJ>"    ;;
+	hold)		echo -n "<FK>"    ;;
+	snow)		echo -n "<FL>"    ;;
+	twinkle)	echo -n "<FM>"    ;;
+	blockmove)	echo -n "<FN>"    ;;
+	random)		echo -n "<FP>"    ;;
+	penwritehello)	echo -n "<FQ>"    ;;
+	penwritewelcome)echo -n "<FR>"    ;;
+	penwriteam)	echo -n "<FS>"    ;;
 	    O)
 	    die "Tag <FO> is invalid intro tag according to doc."
 	    ;;
-	[A-S])
-	    echo -n "<F$1>"
-	    ;;
+	[A-S])		echo -n "<F$1>"    ;;
 	*)
 	    die "Valid intro commands: immediate, xopen, curtainup, curtaindown, scrollleft, 
 	    scrollright, vopen, vclose, scrollup, scrolldown, hold, snow, twinkle, blockmove, 
@@ -123,42 +149,18 @@ introtag ()
 outrotag ()
 {
     case $1 in
-	immediate)
-	    echo -n "<FA>"
-	    ;;
-	xopen)
-	    echo -n "<FB>"
-	    ;;
-	curtainup)
-	    echo -n "<FC>"
-	    ;;
-	curtaindown)
-	    echo -n "<FD>"
-	    ;;
-	scrollleft)
-	    echo -n "<FE>"
-	    ;;
-	scrollright)
-	    echo -n "<FF>"
-	    ;;
-	vopen)
-	    echo -n "<FG>"
-	    ;;
-	vclose)
-	    echo -n "<FH>"
-	    ;;
-	scrollup)
-	    echo -n "<FI>"
-	    ;;
-	scrolldown)
-	    echo -n "<FJ>"
-	    ;;
-	hold)
-	    echo -n "<FK>"
-	    ;;
-	[A-K])
-	    echo -n "<F$1>"
-	    ;;
+	immediate)	echo -n "<FA>"    ;;
+	xopen)		echo -n "<FB>"    ;;
+	curtainup)	echo -n "<FC>"    ;;
+	curtaindown)	echo -n "<FD>"    ;;
+	scrollleft)	echo -n "<FE>"    ;;
+	scrollright)	echo -n "<FF>"    ;;
+	vopen)		echo -n "<FG>"    ;;
+	vclose)		echo -n "<FH>"    ;;
+	scrollup)	echo -n "<FI>"    ;;
+	scrolldown)	echo -n "<FJ>"    ;;
+	hold)		echo -n "<FK>"    ;;
+	[A-K])		echo -n "<F$1>"    ;;
 	*)
 	    die "Valid outro commands: immediate, xopen, curtainup, curtaindown, scrollleft, 
 	    scrollright, vopen, vclose, scrollup, scrolldown, hold"
@@ -166,10 +168,6 @@ outrotag ()
     esac
 }
 
-waittime ()
-{
-    printf "<W\\$(printf '%3o' $(( $1 + 65 )))>"
-}
 
 #Parameter list:
 # 1: <Ln> line number (1-9)
@@ -207,43 +205,70 @@ serialoutput ()
 
 usage ()
 {
- echo " Usage: $ME [options] message
+ echo "$ME: Small script to update LED signs made by Amplus.
+  Usage: $ME [options] message
  
-    -a		Sign address (0 is broadcast, default address is 1)
-    -p		Page number (A-Z)
-    -i		Define the opening animation of the page (use -i help for options)
+    -a		Sign address (0 is broadcast, default address is $ADDR)
+    -p		Page number (A-Z) Mandatory parameter.
+    -i		Define the opening animation of the page. Random intro if not specified. (use -i help for options)
     -w		wait time, from 0 (0.5 seconds) to 25 seconds. Default is 4
-    -o		Define the closing animation of the page (use -o help for options)
-    -f		Flush sign memory
-    -c		Set the internal clock of the sign using system clock
-    -d		Serial port to use. Default is /dev/ttyUSB0. Use - for stdout.
-    -l		Link pages together for immediate display
+    -o		Define the closing animation of the page. Random outtro if not specified. (use -o help for options)
+    -f		Flush sign memory.
+    -c		Set the internal clock of the sign using system clock.
+    -d		Serial port to use. Default is $SERIALPORT. Use - for stdout.
+    -k		Link pages together for immediate display
+    -l		Line number, default is $SLINE
     -h		This help screen
 "
 }
 
 parse_arguments ()
 {
-    while getopts "ha:p:i:w:o:f:c:d:l" OPTION
+    while getopts ":ha:p:i:w:o:fcd:l:k:" OPTION
     do
 	case "$OPTION" in
-	    a)
-		echo -a
-	    ;;
-	    h|?)
+	    a)	ADDR="$OPTARG"		;;
+	    p)	SPAGE="$OPTARG"		;;
+	    i)	INTROTAG="$OPTARG"	;;
+	    w)	WTIME="$OPTARG"		;;
+	    o)	OUTTROTAG="$OPTARG"	;;
+	    f)	echo -f $OPTARG		;;
+	    c)	echo -c $OPTARG		;;
+	    d)	SERIALPORT="$OPTARG"	;;
+	    k)	LINKPAGES="$OPTARG"	;;
+	    l)	SLINE="$OPTARG"	;;
+	    h|\?|*)
 		usage
 		exit 1
+	    ;;
+	    :)
+		die "Option $OPTARG requires an argument"
 	    ;;
 	esac
     done
 }
 
+sanitize_arguments ()
+{
+    test -z "$SPAGE" && die "You must choose a page on the display with the -p parameter"
+
+}
+
 
 parse_arguments $@
+sanitize_arguments
 
-# TODO: Figure out how getopts() works.
+echo "serial port=$SERIALPORT"
+echo "wait time=$WTIME"
+echo "sign address=$ADDR"
+echo "sign page=$SPAGE"
+echo "introtag=$INTROTAG"
+echo "outtrotag=$OUTTROTAG"
+echo "linkpages=$LINKPAGES"
+echo "Line=$SLINE"
+echo "SEFFECT size=${#SEFFECT[@]}"
+
+gettag ${SEFFECT[1]}
 
 #preparedataforsign "$1" "$(makepage $2 $3 $4 $5 $6 $7 $8)"
 echo
-
-
