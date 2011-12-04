@@ -17,58 +17,39 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# WARNING: because the script use arrays, mathematical expressions and string
+# WARNING: because the script use mathematical expressions and string
 # WARNING: manipulations, it will run only with bash or busybox ash.
 
 # Some data. Output tag on the left, text description on the right.
 # Available sign effects
-SEFFECT[1]="<FA>|immediate"
-SEFFECT[2]="<FB>|xopen"
-SEFFECT[3]="<FC>|curtainup"
-SEFFECT[4]="<FD>|curtaindown"
-SEFFECT[5]="<FE>|scrollleft"
-SEFFECT[6]="<FF>|scrollright"
-SEFFECT[7]="<FG>|vopen"
-SEFFECT[8]="<FH>|vclose"
-SEFFECT[9]="<FI>|scrollup"
-SEFFECT[10]="<FJ>|scrolldown"
-SEFFECT[11]="<FK>|hold"
-SEFFECT[12]="<FL>|snow"			# open only
-SEFFECT[13]="<FM>|twinkle"		# open only
-SEFFECT[14]="<FN>|blockmove"		# open only
-SEFFECT[15]="<FP>|random"		# open only
-SEFFECT[16]="<FQ>|penwritehello"	# open only
-SEFFECT[17]="<FR>|penwritewelcome"	# open only
-SEFFECT[18]="<FS>|penwriteam"		# open only
+# Tags LMNPQRS are for opening only.
+SEFFECT="<FA>|immediate,<FB>|xopen,<FC>|curtainup,<FD>|curtaindown,<FE>|scrollleft,<FF>|scrollright,<FG>|vopen"
+SEFFECT="$SEFFECT,<FH>|vclose,<FI>|scrollup,<FJ>|scrolldown,<FK>|hold,<FL>|snow,<FM>|twinkle,<FN>|blockmove"
+SEFFECT="$SEFFECT,<FP>|random,<FQ>|penwritehello,<FR>|penwritewelcome,<FS>|penwriteam"
+LOSEFFECT=18
+LCSEFFECT=11
 
 # Available sign colors
-SCOLOR[1]="<CA>|dimred"
-SCOLOR[2]="<CB>|red"
-SCOLOR[3]="<CC>|brightred"
-SCOLOR[4]="<CD>|dimgreen"
-SCOLOR[5]="<CE>|green"
-SCOLOR[6]="<CF>|brightgreen"
-SCOLOR[7]="<CG>|dimorange"
-SCOLOR[8]="<CH>|orange"
-SCOLOR[9]="<CI>|brightorange"
-SCOLOR[10]="<CJ>|yellow"
-SCOLOR[11]="<CK>|lime"
-SCOLOR[12]="<CL>|inversered"
-SCOLOR[13]="<CM>|inversegreen"
-SCOLOR[14]="<CN>|inverseorange"
-SCOLOR[15]="<CP>|redongreen"
-SCOLOR[16]="<CQ>|greenonred"
-SCOLOR[17]="<CR>|redyellowgreen"
-SCOLOR[18]="<CS>|rainbow"
+SCOLOR="<CA>|dimred,<CB>|red,<CC>|brightred,<CD>|dimgreen,<CE>|green,<CF>|brightgreen,<CG>|dimorange,<CH>|orange"
+SCOLOR="$SCOLOR,<CI>|brightorange,<CJ>|yellow,<CK>|lime,<CL>|inversered,<CM>|inversegreen,<CN>|inverseorange"
+SCOLOR="$SCOLOR,<CP>|redongreen,<CQ>|greenonred,<CR>|redyellowgreen,<CS>|rainbow"
+LSCOLOR=18
 
 # font sizes
-SFONT[1]="<AA>|normal"	# 5x7 pixels
-SFONT[2]="<AB>|bold"	# 6x7 pixels
-SFONT[3]="<AC>|narrow"	# 4x7 pixels
-SFONT[4]="<AD>|XL"	# 7x13 pixels, for displays with > 16 pixels height only
-SFONT[5]="<AE>|long"	# 5x8 pixels, for displays with > 7 pixels height only
+# A: 5x7 pixels
+# B: 6x7 pixels
+# C: 4x7 pixels
+# D: 7x13 pixels, for displays with > 16 pixels height only
+# E: 5x8 pixels, for displays with > 7 pixels height only
+SFONT="<AA>|normal,<AB>|bold,<AC>|narrow,<AD>|XL,<AE>|long"
+LSFONT=5
 
 ME=$(basename $0)
+# some default values
+SERIALPORT="/dev/ttyUSB0"
+WTIME="4"	# Display wait time
+ADDR="1"	# Sign address
+SLINE="1"	# Line on the display
 
 # Function to call when we bail out
 die ()
@@ -103,22 +84,59 @@ waittime ()
     printf "<W\\$(printf '%3o' $(( $1 + 65 )))>"
 }
 
+# gettag function
+# Parameters:
+# 1st: Constant string to use
+# 2nd: index in the string
+# output: the tag for the display
 gettag ()
 {
-    echo -n "$1"|cut -d '|' -f 1
+    echo -n "$1" | cut -d ',' -f $2 | cut -d '|' -f 1
 }
 
+# gettagtext function
+# Parameters:
+# 1st: Constant string to use
+# 2nd: index in the string
+# output: the tag description for the user
 gettagtext ()
 {
-    echo -n "$1"|cut -d '|' -f 2
+    echo -n "$1" | cut -d ',' -f $2 | cut -d '|' -f 2
+}
+
+# gettagindex function
+# Parameters:
+# 1st: Constant string to use
+# 2nd: tag description
+# 3rd: constant string record size
+# output: tag index. return empty string if tag not found
+gettagindex ()
+{
+    for i in $(seq 1 $3); do
+    if [ "$(gettagtext $1 $i)" = "$2" ]; then echo "$i"; fi
+    done
+}
+
+# This function display a list of valid tag descriptions
+# Parameters:
+# 1st: Constant string to use
+# 2nd: constant string record size
+# output: list of valid human readable options.
+taghelp ()
+{
+    for i in $(seq 1 $2); do
+	echo -n "$(gettagtext $1 $i)"
+	if [ $i -ne $2 ]; then echo -n ', '; fi
+    done
+
 }
 
 #Parameter list:
 # 1: <Mn> Display method (bitfield ABCDEQRSTUabcdeqrstu)
-# 2: Text
+# 2: Text data
 makepage ()
 {
-    echo -n "<L$SLINE><P$SPAGE>$INTROTAG<M$1>$(waittime $WTIME)$OUTTROTAG$2"
+    echo -n "<L$SLINE><P$SPAGE>$(gettag $SEFFECT $INTROTAG)<M$1>$(waittime $WTIME)$(gettag $SEFFECT $OUTTROTAG)$2"
 }
 
 linkpages ()
@@ -136,21 +154,20 @@ preparedataforsign ()
     do 
 	XORSCRATCH=$(( $XORSCRATCH ^ $(printf '%d' "'${1:$i:1}") ))
     done
-    printf "<ID%.2X>$1%X<E>" $ADDR $XORSCRATCH; 
-}
-
-# The sign expect 9600 bauds, 8 bits, no parity, one stop bit (8N1)
-serialoutput ()
-{
     if [ "$SERIALPORT" = "-" ]; then
-	echo "$1"
+        printf "<ID%.2X>$1%X<E>\n" $ADDR $XORSCRATCH; 
     else
         test -e $SERIALPORT || die "Device $SERIALPORT do not exist"
         test -c $SERIALPORT || die "Device $SERIALPORT is not a character device"
+	# The sign expect 9600 bauds, 8 bits, no parity, one stop bit (8N1)
         stty -F $SERIALPORT 9600 cs8 -cstopb
-	echo $1 > $SERIALPORT
+        echo $(printf "<ID%.2X>$1%X<E>" $ADDR $XORSCRATCH;) > $SERIALPORT
     fi
 }
+
+################################################################################
+### Everything below that line will need a rewrite at some point.
+################################################################################
 
 usage ()
 {
@@ -178,19 +195,33 @@ parse_arguments ()
     while getopts ":ha:p:i:w:o:ftRd:l:k:c:" OPTION
     do
 	case "$OPTION" in
-	    a)	ADDR="$OPTARG"		;;
-	    p)	SPAGE="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"	;;
-	    i)	INTROTAG="$OPTARG"	;;
-	    w)	WTIME="$OPTARG"		;;
-	    o)	OUTTROTAG="$OPTARG"	;;
-	    f)	SCOMMAND="resetsign"	;;
-	    t)	SCOMMAND="setsignclock"	;;
-	    d)	SERIALPORT="$OPTARG"	;;
+	    a)	ADDR="$OPTARG"		;;	# OK
+	    p)	SPAGE="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"	;;	# OK
+	    i)	case "$OPTARG" in
+		    help*)
+			die "Valid options for -i: $(taghelp $SEFFECT $LOSEFFECT)"
+			;;
+		    *)
+			INTROTAG="$(gettagindex $SEFFECT $OPTARG $LOSEFFECT)"	;;
+		esac
+		;;
+	    w)	WTIME="$OPTARG"		;;	# OK
+	    o)	case "$OPTARG" in
+		    help*)
+			die "Valid options for -o: $(taghelp $SEFFECT $LCSEFFECT)"
+			;;
+		    *)
+			OUTTROTAG="$(gettagindex $SEFFECT $OPTARG $LCSEFFECT)"	;;
+		esac
+		;;
+	    f)	SCOMMAND="resetsign"	;;	# OK
+	    t)	SCOMMAND="setsignclock"	;;	# OK
+	    d)	SERIALPORT="$OPTARG"	;;	# OK
 	    c)	echo "-c $OPTARGS"	;;
 	    k)	LINKPAGES="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"
 		SCOMMAND="linkpages"
-		;;
-	    l)	SLINE="$OPTARG"		;;
+		;;	# OK
+	    l)	SLINE="$OPTARG"		;;	# OK
 	    R)	echo "-R $OPTARGS"	;;
 	    h|\?|*)
 		usage
@@ -207,48 +238,36 @@ process_arguments ()
 {
     case "$SCOMMAND" in
 	linkpages)
-		serialoutput $(preparedataforsign $(linkpages $LINKPAGES))
+		preparedataforsign $(linkpages $LINKPAGES)
 		exit 0
 	;;
 	resetsign)
-		serialoutput $(preparedataforsign $(resetsign))
+		preparedataforsign $(resetsign)
 		exit 0
 	;;
 	setsignclock)
-		serialoutput $(preparedataforsign $(setsignclock))
+		preparedataforsign $(setsignclock)
 		exit 0
 	;;
 	*)
 	test -z "$SPAGE" && die "You must choose a page on the display with the -p parameter"
 	;;
     esac
+    # Sanity check: are the tags valid ?
+    if [ -z "$INTROTAG" ]; then
+	INTROTAG=$(( $RANDOM % 17 + 1 ))
+	echo "$ME: Warning: invalid or empty option for -i, using randomly chosen: $(gettagtext $SEFFECT $INTROTAG)"
+    fi
+    if [ -z "$OUTTROTAG" ]; then
+	OUTTROTAG=$(( $RANDOM % 10 + 1 ))
+	echo "$ME: Warning: invalid or empty option for -o, using randomly chosen: $(gettagtext $SEFFECT $OUTTROTAG)"
+    fi
 }
 
-# some default values
-SERIALPORT="/dev/ttyUSB0"
-WTIME="4"
-ADDR="1"
-SLINE="1"
-RNDTAG=$(( $RANDOM % 17 + 1 ))
-INTROTAG=$(gettag "${SEFFECT[$RNDTAG]}")
-RNDTAG=$(( $RANDOM % 14 + 1 ))
-OUTTROTAG=$(gettag "${SEFFECT[$RNDTAG]}")
-RNDTAG=$(( $RANDOM % 17 + 1 ))
-SCOLOR=$(gettag "${SCOLOR[$RNDTAG]}")
+SCOLORTAG=$(( $RANDOM % 17 + 1 ))
 
 parse_arguments $@
 process_arguments
 
-echo "wait time=$WTIME"
-echo "sign address=$ADDR"
-echo "sign page=$SPAGE"
-echo "introtag=$INTROTAG"
-echo "outtrotag=$OUTTROTAG"
-echo "linkpages=$LINKPAGES"
-echo "Line=$SLINE"
-#echo "SEFFECT size=${#SEFFECT[@]}"
-
-preparedataforsign $(makepage A mouh)
-
-echo
-
+read -r
+preparedataforsign "$(makepage Q "<AC>$REPLY")"
