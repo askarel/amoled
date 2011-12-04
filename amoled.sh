@@ -136,7 +136,7 @@ taghelp ()
 # 2: Text data
 makepage ()
 {
-    echo -n "<L$SLINE><P$SPAGE>$(gettag $SEFFECT $INTROTAG)<M$1>$(waittime $WTIME)$(gettag $SEFFECT $OUTTROTAG)$2"
+    echo -n "<L$SLINE><P$SPAGE>$(gettag $SEFFECT $INTROTAG)<M$1>$(waittime $WTIME)$(gettag $SEFFECT $OUTTROTAG)$(gettag $SCOLOR $SCOLORTAG)$2"
 }
 
 linkpages ()
@@ -198,7 +198,7 @@ parse_arguments ()
 	    a)	ADDR="$OPTARG"		;;	# OK
 	    p)	SPAGE="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"	;;	# OK
 	    i)	case "$OPTARG" in
-		    help*)
+		    help)
 			die "Valid options for -i: $(taghelp $SEFFECT $LOSEFFECT)"
 			;;
 		    *)
@@ -207,7 +207,7 @@ parse_arguments ()
 		;;
 	    w)	WTIME="$OPTARG"		;;	# OK
 	    o)	case "$OPTARG" in
-		    help*)
+		    help)
 			die "Valid options for -o: $(taghelp $SEFFECT $LCSEFFECT)"
 			;;
 		    *)
@@ -217,7 +217,14 @@ parse_arguments ()
 	    f)	SCOMMAND="resetsign"	;;	# OK
 	    t)	SCOMMAND="setsignclock"	;;	# OK
 	    d)	SERIALPORT="$OPTARG"	;;	# OK
-	    c)	echo "-c $OPTARGS"	;;
+	    c)	case "$OPTARG" in
+		    help)
+			die "Valid options for -c: $(taghelp $SCOLOR $LSCOLOR)"
+			;;
+		    *)
+			SCOLORTAG="$(gettagindex $SCOLOR $OPTARG $LSCOLOR)"	;;
+		esac
+		;;
 	    k)	LINKPAGES="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"
 		SCOMMAND="linkpages"
 		;;	# OK
@@ -226,9 +233,6 @@ parse_arguments ()
 	    h|\?|*)
 		usage
 		exit 1
-	    ;;
-	    :)
-		die "Option $OPTARG requires an argument"
 	    ;;
 	esac
     done
@@ -262,12 +266,14 @@ process_arguments ()
 	OUTTROTAG=$(( $RANDOM % 10 + 1 ))
 	echo "$ME: Warning: invalid or empty option for -o, using randomly chosen: $(gettagtext $SEFFECT $OUTTROTAG)"
     fi
+    if [ -z "$SCOLORTAG" ]; then
+	SCOLORTAG=$(( $RANDOM % 17 + 1 ))
+	echo "$ME: Warning: invalid or empty option for -c, using randomly chosen: $(gettagtext $SCOLOR $SCOLORTAG)"
+    fi
 }
-
-SCOLORTAG=$(( $RANDOM % 17 + 1 ))
 
 parse_arguments $@
 process_arguments
 
 read -r
-preparedataforsign "$(makepage Q "<AC>$REPLY")"
+preparedataforsign "$(makepage Q "$REPLY")"

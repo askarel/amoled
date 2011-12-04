@@ -11,6 +11,22 @@ The original script has a heavy dependency for embedded devices like the WRT54GL
 By rewriting his script as a shell script, i can abuse the busybox shell with no external dependency,
 while keeping a small footprint.
 
-At the moment it is unusable, but the logic is being built.
+MISSING FEATURES
+- The pages can have custom graphics. You need to build them by hand
+- The sign support several text colours on the same page. The script do not allow that at the moment.
+- You can embed the current date and the current time within your text. Supported by the sign, not by the script.
+- Some page features are not coded in the script yet.
+- The sign has several fonts available. The script only use the default one. Support for multiple fonts on the
+    same page need to be investigated.
+- Page play schedule
+- Deleting one page or one schedule is not supported yet. However, Resetting the sign is.
 
-Stay tuned...
+PLEASE NOTE: This is my first script using getopts. It is very messy ant the command line arguments
+will change without warning.
+
+The script come with one application: mpcled.sh. This script will update your LED sign with the current track
+being played using the informations provided by mpd.
+
+BUGS
+    There are plenty of them. They're everywhere.
+
