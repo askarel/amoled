@@ -16,13 +16,20 @@ while true; do
     RADIO="$(echo $MPC | cut -d ':' -f 1)"
     TRACK="$(echo $MPC | cut -d ':' -f 2-)"
     # Break down 'radio' ID
-    SPAGE=2
-    echo $RADIO|cut -d '-' -f 1|sed -e 's/ *$//g'|(bash ./amoled.sh -a 1 -i curtainup -o curtainup -p $(echo $ALPHA|cut -c $SPAGE) -d $SPORT -c red)
-    SPAGE=3
-    echo $RADIO|cut -d '-' -f 2|(bash ./amoled.sh -a 1 -i scrollleft -o scrollleft -p C -d $SPORT -c red)
-    SPAGE=4
-    echo \"$TRACK\"
-    echo $TRACK|(bash ./amoled.sh -a 1 -i scrollleft -o scrollleft -p $(echo $ALPHA|cut -c $SPAGE) -d $SPORT -c yellow)
+    RPAGE=1
+    while [ -n "$(echo $RADIO | cut -d '-' -f $RPAGE)" ]; do
+	SPAGE=$(( $SPAGE + 1 ))
+	echo "$(echo $RADIO|cut -d '-' -f $RPAGE |sed -e 's/ *$//g'|sed -e 's/^ *//g')"|(bash ./amoled.sh -a 1 -i scrollleft -o scrollleft -w 2 -p $(echo $ALPHA|cut -c $SPAGE) -d $SPORT -c red)
+	RPAGE=$(( $RPAGE + 1 ))
+    done
+    # Break down track ID
+    TPAGE=1
+    while [ -n "$(echo $TRACK | cut -d '-' -f $TPAGE)" ]; do
+	SPAGE=$(( $SPAGE + 1 ))
+	echo "$(echo $TRACK|cut -d '-' -f $TPAGE |sed -e 's/ *$//g'|sed -e 's/^ *//g')"|(bash ./amoled.sh -a 1 -i scrollleft -o scrollleft -w 2 -p $(echo $ALPHA|cut -c $SPAGE) -d $SPORT -c yellow)
+	TPAGE=$(( $TPAGE + 1 ))
+    done
+    bash ./amoled.sh -k $(echo $ALPHA|cut -c 1-$SPAGE)
     
     sleep 20
 done
