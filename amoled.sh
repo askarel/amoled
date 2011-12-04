@@ -145,6 +145,8 @@ serialoutput ()
     if [ "$SERIALPORT" = "-" ]; then
 	echo "$1"
     else
+        test -e $SERIALPORT || die "Device $SERIALPORT do not exist"
+        test -c $SERIALPORT || die "Device $SERIALPORT is not a character device"
         stty -F $SERIALPORT 9600 cs8 -cstopb
 	echo $1 > $SERIALPORT
     fi
@@ -155,23 +157,25 @@ usage ()
  echo "$ME: Small script to update LED signs made by Amplus.
   Usage: echo \"your text\" | $ME [options]
  
-    -a		Sign address (0 is broadcast, default address is $ADDR)
-    -p		Page number (A-Z) Mandatory parameter.
-    -i		Define the opening animation of the page. Random intro if not specified. (use -i help for options)
-    -w		wait time, from 0 (0.5 seconds) to 25 seconds. Default is $WTIME
-    -o		Define the closing animation of the page. Random outtro if not specified. (use -o help for options)
+    -a N	Sign address (0 is broadcast, default address is $ADDR)
+    -p N	Page number (A-Z) Mandatory parameter.
+    -i anim	Define the opening animation of the page. Random intro if not specified. (use -i help for options)
+    -w N	wait time, from 0 (0.5 seconds) to 25 seconds. Default is $WTIME
+    -o anim	Define the closing animation of the page. Random outtro if not specified. (use -o help for options)
     -f		Flush sign memory.
-    -c		Set the internal clock of the sign using system clock.
-    -d		Serial port to use. Default is $SERIALPORT. Use - for stdout.
-    -k		Link pages together for immediate display
-    -l		Line number, default is $SLINE
+    -t		Set the internal clock of the sign using system clock.
+    -d dev	Serial port to use. Default is $SERIALPORT. Use - for stdout.
+    -k AB...	Link pages together for immediate display
+    -l N	Line number, default is $SLINE
     -h		This help screen
+    -c color	Set text color. Random if not specified (use -c help for options)
+    -R		Treat input data as raw page message data.
 "
 }
 
 parse_arguments ()
 {
-    while getopts ":ha:p:i:w:o:fcd:l:k:" OPTION
+    while getopts ":ha:p:i:w:o:ftRd:l:k:c:" OPTION
     do
 	case "$OPTION" in
 	    a)	ADDR="$OPTARG"		;;
@@ -180,12 +184,14 @@ parse_arguments ()
 	    w)	WTIME="$OPTARG"		;;
 	    o)	OUTTROTAG="$OPTARG"	;;
 	    f)	SCOMMAND="resetsign"	;;
-	    c)	SCOMMAND="setsignclock"	;;
+	    t)	SCOMMAND="setsignclock"	;;
 	    d)	SERIALPORT="$OPTARG"	;;
+	    c)	echo "-c $OPTARGS"	;;
 	    k)	LINKPAGES="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"
 		SCOMMAND="linkpages"
 		;;
-	    l)	SLINE="$OPTARG"	;;
+	    l)	SLINE="$OPTARG"		;;
+	    R)	echo "-R $OPTARGS"	;;
 	    h|\?|*)
 		usage
 		exit 1
@@ -197,7 +203,7 @@ parse_arguments ()
     done
 }
 
-sanitize_arguments ()
+process_arguments ()
 {
     case "$SCOMMAND" in
 	linkpages)
@@ -205,7 +211,7 @@ sanitize_arguments ()
 		exit 0
 	;;
 	resetsign)
-		preparedataforsign $(resetsign)
+		serialoutput $(preparedataforsign $(resetsign))
 		exit 0
 	;;
 	setsignclock)
@@ -227,11 +233,12 @@ RNDTAG=$(( $RANDOM % 17 + 1 ))
 INTROTAG=$(gettag "${SEFFECT[$RNDTAG]}")
 RNDTAG=$(( $RANDOM % 14 + 1 ))
 OUTTROTAG=$(gettag "${SEFFECT[$RNDTAG]}")
+RNDTAG=$(( $RANDOM % 17 + 1 ))
+SCOLOR=$(gettag "${SCOLOR[$RNDTAG]}")
 
 parse_arguments $@
-sanitize_arguments
+process_arguments
 
-echo "serial port=$SERIALPORT"
 echo "wait time=$WTIME"
 echo "sign address=$ADDR"
 echo "sign page=$SPAGE"
@@ -239,7 +246,7 @@ echo "introtag=$INTROTAG"
 echo "outtrotag=$OUTTROTAG"
 echo "linkpages=$LINKPAGES"
 echo "Line=$SLINE"
-echo "SEFFECT size=${#SEFFECT[@]}"
+#echo "SEFFECT size=${#SEFFECT[@]}"
 
 preparedataforsign $(makepage A mouh)
 
