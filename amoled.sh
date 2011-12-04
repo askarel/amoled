@@ -20,6 +20,7 @@
 # WARNING: because the script use arrays, mathematical expressions and string
 # WARNING: manipulations, it will run only with bash or busybox ash.
 
+# Some data. Output tag on the left, text description on the right.
 # Available sign effects
 SEFFECT[1]="<FA>|immediate"
 SEFFECT[2]="<FB>|xopen"
@@ -57,17 +58,17 @@ SCOLOR[13]="<CM>|inversegreen"
 SCOLOR[14]="<CN>|inverseorange"
 SCOLOR[15]="<CP>|redongreen"
 SCOLOR[16]="<CQ>|greenonred"
-SCOLOR[17]="<CR>|RYG"
+SCOLOR[17]="<CR>|redyellowgreen"
 SCOLOR[18]="<CS>|rainbow"
 
-# some default values
-ME=$(basename $0)
-SERIALPORT="/dev/ttyUSB0"
-WTIME="4"
-ADDR="1"
-SLINE="1"
-#INTROTAG=$(gettag "${SEFFECT[$(( $RANDOM % 18 +1))]}")
+# font sizes
+SFONT[1]="<AA>|normal"	# 5x7 pixels
+SFONT[2]="<AB>|bold"	# 6x7 pixels
+SFONT[3]="<AC>|narrow"	# 4x7 pixels
+SFONT[4]="<AD>|XL"	# 7x13 pixels, for displays with > 16 pixels height only
+SFONT[5]="<AE>|long"	# 5x8 pixels, for displays with > 7 pixels height only
 
+ME=$(basename $0)
 
 # Function to call when we bail out
 die ()
@@ -112,106 +113,52 @@ gettagtext ()
     echo -n "$1"|cut -d '|' -f 2
 }
 
-introtag ()
-{
-    case $1 in
-	immediate)	echo -n "<FA>"    ;;
-	xopen)		echo -n "<FB>"    ;;
-	curtainup)	echo -n "<FC>"    ;;
-	curtaindown)	echo -n "<FD>"    ;;
-	scrollleft)	echo -n "<FE>"    ;;
-	scrollright)	echo -n "<FF>"    ;;
-	vopen)		echo -n "<FG>"    ;;
-	vclose)		echo -n "<FH>"    ;;
-	scrollup)	echo -n "<FI>"    ;;
-	scrolldown)	echo -n "<FJ>"    ;;
-	hold)		echo -n "<FK>"    ;;
-	snow)		echo -n "<FL>"    ;;
-	twinkle)	echo -n "<FM>"    ;;
-	blockmove)	echo -n "<FN>"    ;;
-	random)		echo -n "<FP>"    ;;
-	penwritehello)	echo -n "<FQ>"    ;;
-	penwritewelcome)echo -n "<FR>"    ;;
-	penwriteam)	echo -n "<FS>"    ;;
-	    O)
-	    die "Tag <FO> is invalid intro tag according to doc."
-	    ;;
-	[A-S])		echo -n "<F$1>"    ;;
-	*)
-	    die "Valid intro commands: immediate, xopen, curtainup, curtaindown, scrollleft, 
-	    scrollright, vopen, vclose, scrollup, scrolldown, hold, snow, twinkle, blockmove, 
-	    random, penwritehelllo, penwritewelcome, penwriteam "
-	    ;;  
-    esac
-}
-
-
-outrotag ()
-{
-    case $1 in
-	immediate)	echo -n "<FA>"    ;;
-	xopen)		echo -n "<FB>"    ;;
-	curtainup)	echo -n "<FC>"    ;;
-	curtaindown)	echo -n "<FD>"    ;;
-	scrollleft)	echo -n "<FE>"    ;;
-	scrollright)	echo -n "<FF>"    ;;
-	vopen)		echo -n "<FG>"    ;;
-	vclose)		echo -n "<FH>"    ;;
-	scrollup)	echo -n "<FI>"    ;;
-	scrolldown)	echo -n "<FJ>"    ;;
-	hold)		echo -n "<FK>"    ;;
-	[A-K])		echo -n "<F$1>"    ;;
-	*)
-	    die "Valid outro commands: immediate, xopen, curtainup, curtaindown, scrollleft, 
-	    scrollright, vopen, vclose, scrollup, scrolldown, hold"
-	    ;;  
-    esac
-}
-
-
 #Parameter list:
-# 1: <Ln> line number (1-9)
-# 2: <Pn> Page number (A-Z)
-# 3: <Fn> Intro type (A-S without O)
-# 4: <Mn> Display method (bitfield ABCDEQRSTUabcdeqrstu)
-# 5: <Wn> Wait time (A-Z, 0,5-25 sec)
-# 6: <Fn> Outtro type (A-K)
-
+# 1: <Mn> Display method (bitfield ABCDEQRSTUabcdeqrstu)
+# 2: Text
 makepage ()
 {
-    echo -n "<L$1><P$2>$(introtag $3)<M$4>$(waittime $5)$(outrotag $6)$7"
+    echo -n "<L$SLINE><P$SPAGE>$INTROTAG<M$1>$(waittime $WTIME)$OUTTROTAG$2"
 }
 
+linkpages ()
+{
+    echo -n "<TA>00010100009912302359$1" # 30 ou 31 décembre ?
+}
 
 # Build the final string: set target sign address, insert data, calculate 
 # data checksum and insert end tag. At this point, the data is ready to be 
 # sent to the display.
 preparedataforsign ()
 {
-    XORSCRATCH="$(printf '%d' "'${2:0:1}")"
-    for i in $(seq 1 $(($(echo -n "$2" |wc -m )-1))); 
+    XORSCRATCH="$(printf '%d' "'${1:0:1}")"
+    for i in $(seq 1 $(($(echo -n "$1" |wc -m )-1))); 
     do 
-	XORSCRATCH=$(( $XORSCRATCH ^ $(printf '%d' "'${2:$i:1}") ))
+	XORSCRATCH=$(( $XORSCRATCH ^ $(printf '%d' "'${1:$i:1}") ))
     done
-    printf "<ID%.2X>$2%X<E>" $1 $XORSCRATCH; 
+    printf "<ID%.2X>$1%X<E>" $ADDR $XORSCRATCH; 
 }
 
 # The sign expect 9600 bauds, 8 bits, no parity, one stop bit (8N1)
 serialoutput ()
 {
-    stty -F $1 9600 cs8 -stopb
-    echo $2 > $1
+    if [ "$SERIALPORT" = "-" ]; then
+	echo "$1"
+    else
+        stty -F $SERIALPORT 9600 cs8 -cstopb
+	echo $1 > $SERIALPORT
+    fi
 }
 
 usage ()
 {
  echo "$ME: Small script to update LED signs made by Amplus.
-  Usage: $ME [options] message
+  Usage: echo \"your text\" | $ME [options]
  
     -a		Sign address (0 is broadcast, default address is $ADDR)
     -p		Page number (A-Z) Mandatory parameter.
     -i		Define the opening animation of the page. Random intro if not specified. (use -i help for options)
-    -w		wait time, from 0 (0.5 seconds) to 25 seconds. Default is 4
+    -w		wait time, from 0 (0.5 seconds) to 25 seconds. Default is $WTIME
     -o		Define the closing animation of the page. Random outtro if not specified. (use -o help for options)
     -f		Flush sign memory.
     -c		Set the internal clock of the sign using system clock.
@@ -228,14 +175,16 @@ parse_arguments ()
     do
 	case "$OPTION" in
 	    a)	ADDR="$OPTARG"		;;
-	    p)	SPAGE="$OPTARG"		;;
+	    p)	SPAGE="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"	;;
 	    i)	INTROTAG="$OPTARG"	;;
 	    w)	WTIME="$OPTARG"		;;
 	    o)	OUTTROTAG="$OPTARG"	;;
-	    f)	echo -f $OPTARG		;;
-	    c)	echo -c $OPTARG		;;
+	    f)	SCOMMAND="resetsign"	;;
+	    c)	SCOMMAND="setsignclock"	;;
 	    d)	SERIALPORT="$OPTARG"	;;
-	    k)	LINKPAGES="$OPTARG"	;;
+	    k)	LINKPAGES="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"
+		SCOMMAND="linkpages"
+		;;
 	    l)	SLINE="$OPTARG"	;;
 	    h|\?|*)
 		usage
@@ -250,10 +199,34 @@ parse_arguments ()
 
 sanitize_arguments ()
 {
-    test -z "$SPAGE" && die "You must choose a page on the display with the -p parameter"
-
+    case "$SCOMMAND" in
+	linkpages)
+		serialoutput $(preparedataforsign $(linkpages $LINKPAGES))
+		exit 0
+	;;
+	resetsign)
+		preparedataforsign $(resetsign)
+		exit 0
+	;;
+	setsignclock)
+		serialoutput $(preparedataforsign $(setsignclock))
+		exit 0
+	;;
+	*)
+	test -z "$SPAGE" && die "You must choose a page on the display with the -p parameter"
+	;;
+    esac
 }
 
+# some default values
+SERIALPORT="/dev/ttyUSB0"
+WTIME="4"
+ADDR="1"
+SLINE="1"
+RNDTAG=$(( $RANDOM % 17 + 1 ))
+INTROTAG=$(gettag "${SEFFECT[$RNDTAG]}")
+RNDTAG=$(( $RANDOM % 14 + 1 ))
+OUTTROTAG=$(gettag "${SEFFECT[$RNDTAG]}")
 
 parse_arguments $@
 sanitize_arguments
@@ -268,7 +241,7 @@ echo "linkpages=$LINKPAGES"
 echo "Line=$SLINE"
 echo "SEFFECT size=${#SEFFECT[@]}"
 
-gettag ${SEFFECT[1]}
+preparedataforsign $(makepage A mouh)
 
-#preparedataforsign "$1" "$(makepage $2 $3 $4 $5 $6 $7 $8)"
 echo
+
