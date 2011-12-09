@@ -20,17 +20,24 @@
 # WARNING: because the script use mathematical expressions and string
 # WARNING: manipulations, it will run only with bash or busybox ash.
 
+ME=$(basename $0)
+# some default values
+SERIALPORT="/dev/ttyUSB0"
+WTIME="4"	# Display wait time
+ADDR="1"	# Sign address
+SLINE="1"	# Line on the display
+
 # Some data. Output tag on the left, text description on the right.
 # Available sign effects
 # Tags LMNPQRS are for opening only.
-SEFFECT="<FA>|immediate,<FB>|xopen,<FC>|curtainup,<FD>|curtaindown,<FE>|scrollleft,<FF>|scrollright,<FG>|vopen"
+SEFFECT="|help,<FA>|immediate,<FB>|xopen,<FC>|curtainup,<FD>|curtaindown,<FE>|scrollleft,<FF>|scrollright,<FG>|vopen"
 SEFFECT="$SEFFECT,<FH>|vclose,<FI>|scrollup,<FJ>|scrolldown,<FK>|hold,<FL>|snow,<FM>|twinkle,<FN>|blockmove"
 SEFFECT="$SEFFECT,<FP>|random,<FQ>|penwritehello,<FR>|penwritewelcome,<FS>|penwriteam"
-LOSEFFECT=18
-LCSEFFECT=11
+LOSEFFECT=19
+LCSEFFECT=12
 
 # Available sign colors
-SCOLOR="<CA>|dimred,<CB>|red,<CC>|brightred,<CD>|dimgreen,<CE>|green,<CF>|brightgreen,<CG>|dimorange,<CH>|orange"
+SCOLOR="|help,<CA>|dimred,<CB>|red,<CC>|brightred,<CD>|dimgreen,<CE>|green,<CF>|brightgreen,<CG>|dimorange,<CH>|orange"
 SCOLOR="$SCOLOR,<CI>|brightorange,<CJ>|yellow,<CK>|lime,<CL>|inversered,<CM>|inversegreen,<CN>|inverseorange"
 SCOLOR="$SCOLOR,<CP>|redongreen,<CQ>|greenonred,<CR>|redyellowgreen,<CS>|rainbow"
 LSCOLOR=18
@@ -41,15 +48,14 @@ LSCOLOR=18
 # C: 4x7 pixels
 # D: 7x13 pixels, for displays with > 16 pixels height only
 # E: 5x8 pixels, for displays with > 7 pixels height only
-SFONT="<AA>|normal,<AB>|bold,<AC>|narrow,<AD>|XL,<AE>|long"
+SFONT="|help,<AA>|5x7,<AB>|6x7,<AC>|4x7,<AD>|7x13,<AE>|5x8"
 LSFONT=5
 
-ME=$(basename $0)
-# some default values
-SERIALPORT="/dev/ttyUSB0"
-WTIME="4"	# Display wait time
-ADDR="1"	# Sign address
-SLINE="1"	# Line on the display
+# Wait tags
+# A: 0.5 seconds, Z: 25 seconds.
+SWTIME="|help,<WA>|0.5,<WB>|1,<WC>|2,<WD>|3,<WE>|4,<WF>|5,<WG>|6,<WH>|7,<WI>|8,<WJ>|9,<WK>|10,<WL>|11,<WM>|12,<WN>|13"
+SWTIME="$SWTIME,<WO>|14,<WP>|15,<WQ>|16,<WR>|17,<WS>|18,<WT>|19,<WU>|20,<WV>|21,<WW>|22,<WX>|23,<WY>|24,<WZ>|25"
+LSWTIME=27
 
 # Function to call when we bail out
 die ()
@@ -74,14 +80,6 @@ setsignclock ()
 resetsign ()
 {
     echo -n '<D*>'
-}
-
-# For how long should the page stay ? 
-# A=0.5 second, Z=25 seconds.
-# We will cheat the user and use 0 to mean 0.5 :-)
-waittime ()
-{
-    printf "<W\\$(printf '%3o' $(( $1 + 65 )))>"
 }
 
 # gettag function
@@ -119,24 +117,27 @@ gettagindex ()
 
 # This function display a list of valid tag descriptions
 # Parameters:
-# 1st: Constant string to use
-# 2nd: constant string record size
+# 1st: switch to describe
+# 2nd: Constant string to use
+# 3rd: constant string record size
 # output: list of valid human readable options.
 taghelp ()
 {
-    for i in $(seq 1 $2); do
-	echo -n "$(gettagtext $1 $i)"
-	if [ $i -ne $2 ]; then echo -n ', '; fi
+    echo -n "$ME: Valid options for option $1: "
+    for i in $(seq 1 $3); do
+	echo -n "$(gettagtext $2 $i)"
+	if [ $i -ne $3 ]; then echo -n ', '; fi
     done
-
+    echo ""
+    exit 1
 }
 
 #Parameter list:
-# 1: <Mn> Display method (bitfield ABCDEQRSTUabcdeqrstu)
+# 1: <Mn> Display method (bitfield ABCDEQRSTUabcdeqrstu) NEED A REWRITE
 # 2: Text data
 makepage ()
 {
-    echo -n "<L$SLINE><P$SPAGE>$(gettag $SEFFECT $INTROTAG)<M$1>$(waittime $WTIME)$(gettag $SEFFECT $OUTTROTAG)$(gettag $SCOLOR $SCOLORTAG)$2"
+    echo -n "<L$SLINE><P$SPAGE>$(gettag $SEFFECT $INTROTAG)<M$1>$(gettag $SWTIME $WTIME)$(gettag $SEFFECT $OUTTROTAG)$(gettag $SCOLOR $SCOLORTAG)$2"
 }
 
 linkpages ()
@@ -177,7 +178,7 @@ usage ()
     -a N	Sign address (0 is broadcast, default address is $ADDR)
     -p N	Page number (A-Z) Mandatory parameter.
     -i anim	Define the opening animation of the page. Random intro if not specified. (use -i help for options)
-    -w N	wait time, from 0 (0.5 seconds) to 25 seconds. Default is $WTIME
+    -w N	wait time, from 0 (0.5 seconds) to 25 seconds. Default is $(gettagtext $SWTIME $WTIME)
     -o anim	Define the closing animation of the page. Random outtro if not specified. (use -o help for options)
     -f		Flush sign memory.
     -t		Set the internal clock of the sign using system clock.
@@ -188,6 +189,7 @@ usage ()
     -c color	Set text color. Random if not specified (use -c help for options)
     -R		Treat input data as raw page message data.
 "
+ exit 1
 }
 
 parse_arguments ()
@@ -197,49 +199,29 @@ parse_arguments ()
 	case "$OPTION" in
 	    a)	ADDR="$OPTARG"		;;	# OK
 	    p)	SPAGE="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"	;;	# OK
-	    i)	case "$OPTARG" in
-		    help)
-			die "Valid options for -i: $(taghelp $SEFFECT $LOSEFFECT)"
-			;;
-		    *)
-			INTROTAG="$(gettagindex $SEFFECT $OPTARG $LOSEFFECT)"	;;
-		esac
-		;;
-	    w)	WTIME="$OPTARG"		;;	# OK
-	    o)	case "$OPTARG" in
-		    help)
-			die "Valid options for -o: $(taghelp $SEFFECT $LCSEFFECT)"
-			;;
-		    *)
-			OUTTROTAG="$(gettagindex $SEFFECT $OPTARG $LCSEFFECT)"	;;
-		esac
-		;;
+	    i)	INTROTAG="$(gettagindex $SEFFECT $OPTARG $LOSEFFECT)"	;;
+	    w)	WTIME="$(gettagindex $SWTIME $OPTARG $LSWTIME)"		;;	# OK
+	    o)	OUTTROTAG="$(gettagindex $SEFFECT $OPTARG $LCSEFFECT)"	;;
 	    f)	SCOMMAND="resetsign"	;;	# OK
 	    t)	SCOMMAND="setsignclock"	;;	# OK
 	    d)	SERIALPORT="$OPTARG"	;;	# OK
-	    c)	case "$OPTARG" in
-		    help)
-			die "Valid options for -c: $(taghelp $SCOLOR $LSCOLOR)"
-			;;
-		    *)
-			SCOLORTAG="$(gettagindex $SCOLOR $OPTARG $LSCOLOR)"	;;
-		esac
-		;;
+	    c)	SCOLORTAG="$(gettagindex $SCOLOR $OPTARG $LSCOLOR)"	;;
 	    k)	LINKPAGES="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"
 		SCOMMAND="linkpages"
 		;;	# OK
 	    l)	SLINE="$OPTARG"		;;	# OK
 	    R)	echo "-R $OPTARGS"	;;
-	    h|\?|*)
-		usage
-		exit 1
-	    ;;
+	    h|\?|*)	usage		;;
 	esac
     done
 }
 
 process_arguments ()
 {
+    if [ "$INTROTAG" = "1" ]; then taghelp -i $SEFFECT $LOSEFFECT; fi
+    if [ "$OUTTROTAG" = "1" ]; then taghelp -i $SEFFECT $LCSEFFECT; fi
+    if [ "$WTIME" = "1" ]; then taghelp -i $SWTIME $LSWTIME; fi
+    if [ "$SCOLORTAG" = "1" ]; then taghelp -i $SCOLOR $LSCOLOR; fi
     case "$SCOMMAND" in
 	linkpages)
 		preparedataforsign $(linkpages $LINKPAGES)
@@ -257,17 +239,17 @@ process_arguments ()
 	test -z "$SPAGE" && die "You must choose a page on the display with the -p parameter"
 	;;
     esac
-    # Sanity check: are the tags valid ?
+    # Sanity checks: are the tags valid ?
     if [ -z "$INTROTAG" ]; then
-	INTROTAG=$(( $RANDOM % 17 + 1 ))
+	INTROTAG=$(( $RANDOM % $LOSEFFECT + 2 ))
 	echo "$ME: Warning: invalid or empty option for -i, using randomly chosen: $(gettagtext $SEFFECT $INTROTAG)"
     fi
     if [ -z "$OUTTROTAG" ]; then
-	OUTTROTAG=$(( $RANDOM % 10 + 1 ))
+	OUTTROTAG=$(( $RANDOM % $LCSEFFECT + 2 ))
 	echo "$ME: Warning: invalid or empty option for -o, using randomly chosen: $(gettagtext $SEFFECT $OUTTROTAG)"
     fi
     if [ -z "$SCOLORTAG" ]; then
-	SCOLORTAG=$(( $RANDOM % 17 + 1 ))
+	SCOLORTAG=$(( $RANDOM % $LSCOLOR + 2 ))
 	echo "$ME: Warning: invalid or empty option for -c, using randomly chosen: $(gettagtext $SCOLOR $SCOLORTAG)"
     fi
 }
@@ -275,5 +257,8 @@ process_arguments ()
 parse_arguments $@
 process_arguments
 
+
 read -r
 preparedataforsign "$(makepage Q "$REPLY")"
+
+#decimal to ascii:    printf "<W\\$(printf '%3o' $(( $1 + 65 )))>"
