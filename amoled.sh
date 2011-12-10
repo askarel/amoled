@@ -49,7 +49,7 @@ LSCOLOR=18
 # D: 7x13 pixels, for displays with > 16 pixels height only
 # E: 5x8 pixels, for displays with > 7 pixels height only
 SFONT="|help,<AA>|5x7,<AB>|6x7,<AC>|4x7,<AD>|7x13,<AE>|5x8"
-LSFONT=5
+LSFONT=6
 
 # Wait tags
 # A: 0.5 seconds, Z: 25 seconds.
@@ -175,19 +175,21 @@ usage ()
  echo "$ME: Small script to update LED signs made by Amplus.
   Usage: echo \"your text\" | $ME [options]
  
+ Sign controls and port settings:
     -a N	Sign address (0 is broadcast, default address is $ADDR)
+    -d dev	Serial port to use. Default is $SERIALPORT. Use - for stdout.
+    -f		Flush sign memory.
+    -h		This help screen
+    -k AB...	Link pages together for immediate display
+    -t		Set the internal clock of the sign using system clock.
+ Page data:
     -p N	Page number (A-Z) Mandatory parameter.
     -i anim	Define the opening animation of the page. Random intro if not specified. (use -i help for options)
-    -w N	wait time, from 0 (0.5 seconds) to 25 seconds. Default is $(gettagtext $SWTIME $WTIME)
+    -w N	wait time, from 0.5 seconds to 25 seconds. Default is $(gettagtext $SWTIME $WTIME)
     -o anim	Define the closing animation of the page. Random outtro if not specified. (use -o help for options)
-    -f		Flush sign memory.
-    -t		Set the internal clock of the sign using system clock.
-    -d dev	Serial port to use. Default is $SERIALPORT. Use - for stdout.
-    -k AB...	Link pages together for immediate display
     -l N	Line number, default is $SLINE
-    -h		This help screen
     -c color	Set text color. Random if not specified (use -c help for options)
-    -R		Treat input data as raw page message data.
+    -R		Treat input data as raw page message data. (not implemented)
 "
  exit 1
 }
@@ -198,7 +200,7 @@ parse_arguments ()
     do
 	case "$OPTION" in
 	    a)	ADDR="$OPTARG"		;;	# OK
-	    p)	SPAGE="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')"	;;	# OK
+	    p)	SPAGE="$(echo "$OPTARG" | tr '[:lower:]' '[:upper:]')";;	# OK
 	    i)	INTROTAG="$(gettagindex $SEFFECT $OPTARG $LOSEFFECT)"	;;
 	    w)	WTIME="$(gettagindex $SWTIME $OPTARG $LSWTIME)"		;;	# OK
 	    o)	OUTTROTAG="$(gettagindex $SEFFECT $OPTARG $LCSEFFECT)"	;;
@@ -222,6 +224,7 @@ process_arguments ()
     if [ "$OUTTROTAG" = "1" ]; then taghelp -i $SEFFECT $LCSEFFECT; fi
     if [ "$WTIME" = "1" ]; then taghelp -i $SWTIME $LSWTIME; fi
     if [ "$SCOLORTAG" = "1" ]; then taghelp -i $SCOLOR $LSCOLOR; fi
+    if [ "$FONTTAG" = "1" ]; then taghelp -i $SFONT $LSFONT; fi
     case "$SCOMMAND" in
 	linkpages)
 		preparedataforsign $(linkpages $LINKPAGES)
