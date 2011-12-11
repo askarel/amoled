@@ -16,9 +16,8 @@ MISSING FEATURES
 - The sign support several text colours on the same page. The script do not allow that at the moment.
 - You can embed the current date and the current time within your text. Supported by the sign, not by the script.
 - Some page features are not coded in the script yet.
-- The sign has several fonts available. The script only use the default one. Support for multiple fonts on the
-    same page need to be investigated.
-- Page play schedule
+- The sign has several fonts available. Support for multiple fonts on the same page need to be investigated.
+- Page play schedule: the only schedule implemented is the immediate one.
 - Deleting one page or one schedule is not supported yet. However, Resetting the sign is.
 
 PLEASE NOTE: This is my first script using getopts. It is very messy ant the command line arguments
