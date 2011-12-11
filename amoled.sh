@@ -188,7 +188,7 @@ preparedataforsign ()
 usage ()
 {
  echo "$ME: Small script to update LED signs made by Amplus.
-  Usage: echo $ME [options]
+  Usage: echo \"your text\" | $ME [options]
  
  Sign controls and port settings:
     -A N	Sign address (0 is broadcast, default address is $ADDR)
@@ -206,7 +206,7 @@ usage ()
     -c color	Set text color. Random if not specified (use -c help for options)
     -f font	Font to use. (Use -f help for options)
     -s N	Skip N 1-pixel-wide columns from left side
-    -t TEXT	Text to display
+    -t TEXT	Text to display (NOT WORKING)
     -g DATA	Graphic block to display (not implemented)
     -k		Insert clock (not implemented)
     -d		Insert date (not implemented)
@@ -235,7 +235,7 @@ parse_arguments ()
 	    c)	SCOLORTAG="$(gettagindex $SCOLOR $OPTARG $LSCOLOR)"	;;
 	    l)	SLINE="$OPTARG"		;;	# OK
 	    f)	FONTTAG="$(gettagindex $SFONT $OPTARG $LSFONT)"		;;
-	    t)	MYTEXT="$OPTARG"	;;
+	    t)	MYTEXT="$OPTARG"; echo "$OPTARG"	;;
 	    R)	echo "-R $OPTARG"	;;
 	    h|\?|*)	usage		;;
 	esac
@@ -284,6 +284,8 @@ process_arguments ()
 parse_arguments $@
 process_arguments
 
-preparedataforsign "$(makepage Q $(textpage "$MYTEXT"))"
+read -r
+preparedataforsign "$(makepage Q "$(textpage "$REPLY")")"
+#preparedataforsign "$(makepage Q "$(textpage "$MYTEXT")")"
 
 #decimal to ascii:    printf "<W\\$(printf '%3o' $(( $1 + 65 )))>"
