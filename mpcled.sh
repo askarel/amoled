@@ -24,7 +24,7 @@ while true; do
 	    while [ -n "$(echo $RADIO | cut -d '-' -f $RPAGE)" ]; do
 		SPAGE=$(( $SPAGE + 1 ))
 #		bash ./amoled.sh -D $SPORT -A 1 -i scrollleft -o scrollleft -w 2 -p $(echo $ALPHA|cut -c $SPAGE) -c red -t "$(echo $RADIO|cut -d '-' -f $RPAGE)"
-		echo "$(echo $RADIO|cut -d '-' -f $RPAGE |sed -e 's/ *$//g'|sed -e 's/^ *//g')" |(bash ./amoled.sh -D $SPORT -A 1 -i scrollleft -o scrollleft -w 2 -p $(echo $ALPHA|cut -c $SPAGE) -c red )
+		echo "$(echo $RADIO|cut -d '-' -f $RPAGE |sed -e 's/ *$//g'|sed -e 's/^ *//g')" |(bash ./amoled.sh -D $SPORT -A 1 -i scrollleft -o scrollleft -w 2 -p $(echo $ALPHA|cut -c $SPAGE) -c red -f 4x7)
 		RPAGE=$(( $RPAGE + 1 ))
 	    done
 	else
@@ -34,7 +34,7 @@ while true; do
 	TPAGE=1
 	while [ -n "$(echo $TRACK | cut -d '-' -f $TPAGE)" ]; do
 	    SPAGE=$(( $SPAGE + 1 ))
-	    echo "$(echo $TRACK|cut -d '-' -f $TPAGE |sed -e 's/ *$//g'|sed -e 's/^ *//g')" |(bash ./amoled.sh -D $SPORT -A 1 -i scrollleft -o scrollleft -w 2 -p $(echo $ALPHA|cut -c $SPAGE) -c yellow )
+	    echo "$(echo $TRACK|cut -d '-' -f $TPAGE |sed -e 's/ *$//g'|sed -e 's/^ *//g')" |(bash ./amoled.sh -D $SPORT -A 1 -i scrollleft -o scrollleft -w 2 -p $(echo $ALPHA|cut -c $SPAGE) -c orange -f 4x7 )
 #		bash ./amoled.sh -D $SPORT -A 1 -i scrollleft -o scrollleft -w 2 -p $(echo $ALPHA|cut -c $SPAGE) -c yellow -t "$(echo $TRACK|cut -d '-' -f $TPAGE)"
 	    TPAGE=$(( $TPAGE + 1 ))
 	done

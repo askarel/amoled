@@ -171,7 +171,7 @@ preparedataforsign ()
 	XORSCRATCH=$(( $XORSCRATCH ^ $(printf '%d' "'${1:$i:1}") )) #' Syntax highlighters choke on that.
     done
     if [ "$SERIALPORT" = "-" ]; then
-        printf "<ID%.2X>$1%X<E>\n" $ADDR $XORSCRATCH; 
+        printf "<ID%.2X>$1%.2X<E>\n" $ADDR $XORSCRATCH; 
     else
         test -e $SERIALPORT || die "Device $SERIALPORT do not exist"
         test -c $SERIALPORT || die "Device $SERIALPORT is not a character device"
