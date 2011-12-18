@@ -45,7 +45,7 @@ SCOLOR="$SCOLOR,<CI>|brightorange,<CJ>|yellow,<CK>|lime,<CL>|inversered,<CM>|inv
 SCOLOR="$SCOLOR,<CP>|redongreen,<CQ>|greenonred,<CR>|redyellowgreen,<CS>|rainbow,|"
 LSCOLOR=20
 
-# font sizes
+# font size (optional)
 # A: 5x7 pixels
 # B: 6x7 pixels
 # C: 4x7 pixels
@@ -62,7 +62,7 @@ LSWTIME=27
 
 # Bell tags, by 0.5 seconds increment (optional)
 SBELL="|help,<BA>|0.5,<BB>|1,<BC>|1.5,<BD>|2,<BE>|2.5,<BF>|3,<BG>|3.5,<BH>|4,<BI>|4.5,<BJ>|5,<BK>|5.5,<BL>|6,<BM>|6.5"
-SBELL="$SBELL,<BN>|7,<BO>|7.5,<BP>|8,<BQ>|8.5,,<BR>|9,<BS>|9.5,<BT>|10,<BU>|10.5,<BV>|11,<BW>|11.5,<BX>|12,<BY>|12.5,<BZ>|13,|"
+SBELL="$SBELL,<BN>|7,<BO>|7.5,<BP>|8,<BQ>|8.5,<BR>|9,<BS>|9.5,<BT>|10,<BU>|10.5,<BV>|11,<BW>|11.5,<BX>|12,<BY>|12.5,<BZ>|13,|"
 LSBELL=28
 
 # Function to call when we bail out
@@ -140,10 +140,16 @@ taghelp ()
     exit 1
 }
 
+# Skip N columns from left hand side of display. Do nothing if parameter is empty.
+skipcolumns ()
+{
+    test -z "$1" || printf "<N%.2X>" $1
+}
+
 # Make a text page. Add some color and a font before the text.
 textpage ()
 {
-    echo -n "$(gettag $SCOLOR $SCOLORTAG)$(gettag $SFONT $FONTTAG)$1"
+    echo -n "$(skipcolumns $SKIPCOL)$(gettag $SCOLOR $SCOLORTAG)$(gettag $SFONT $FONTTAG)$1"
 }
 
 #Parameter list:
@@ -177,7 +183,7 @@ preparedataforsign ()
         test -c $SERIALPORT || die "Device $SERIALPORT is not a character device"
 	# The sign expect 9600 bauds, 8 bits, no parity, one stop bit (8N1)
         stty -F $SERIALPORT 9600 cs8 -cstopb
-        echo $(printf "<ID%.2X>$1%X<E>" $ADDR $XORSCRATCH;) > $SERIALPORT
+        echo $(printf "<ID%.2X>$1%.2X<E>" $ADDR $XORSCRATCH;) > $SERIALPORT
     fi
 }
 
@@ -206,7 +212,7 @@ usage ()
     -c color	Set text color. Random if not specified (use -c help for options)
     -f font	Font to use. (Use -f help for options)
     -s N	Skip N 1-pixel-wide columns from left side
-    -t TEXT	Text to display (NOT WORKING)
+    -t TEXT	Text to display (NOT WORKING: use the pipe method)
     -g DATA	Graphic block to display (not implemented)
     -k		Insert clock (not implemented)
     -d		Insert date (not implemented)
@@ -218,7 +224,7 @@ usage ()
 
 parse_arguments ()
 {
-    while getopts ":hA:p:i:w:o:FTRD:l:K:c:f:t:" OPTION
+    while getopts ":hA:p:i:w:o:FTRD:l:K:c:f:t:s:" OPTION
     do
 	case "$OPTION" in
 	    A)	ADDR="$OPTARG"		;;	# OK
@@ -237,6 +243,7 @@ parse_arguments ()
 	    f)	FONTTAG="$(gettagindex $SFONT $OPTARG $LSFONT)"		;;
 	    t)	MYTEXT="$OPTARG"; echo "$OPTARG"	;;
 	    R)	echo "-R $OPTARG"	;;
+	    s)	SKIPCOL="$OPTARG"	;;
 	    h|\?|*)	usage		;;
 	esac
     done

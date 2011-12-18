@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Some constants
-MPDHOST="192.168.3.5"
-SPORT="-"
+MPDHOST="127.0.0.1"
+SPORT="/dev/ttyUSB0"
 ALPHA="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 SPAGE=1
 
