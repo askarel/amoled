@@ -23,10 +23,11 @@
 ME=$(basename $0)
 # some default values
 SERIALPORT="/dev/ttyUSB0"
-WTIME="4"	# Display wait time
+WTIME="28"	# Use default display wait time
 ADDR="1"	# Sign address
 SLINE="1"	# Line on the display
 FONTTAG="7"	# Use default display font
+MYBELL="28"	# Do not ring the bell
 #SCOLORTAG="20"	# Use default sign color (usually orange)
 
 # Some data. Output tag on the left, text description on the right.
@@ -55,10 +56,10 @@ SFONT="|help,<AA>|5x7,<AB>|6x7,<AC>|4x7,<AD>|7x13,<AE>|5x8,|"
 LSFONT=7
 
 # Wait tags
-# A: 0.5 seconds, Z: 25 seconds. (mandatory)
+# A: 0.5 seconds, Z: 25 seconds. (optional, but the sign will wait 0.5 seconds without the tag)
 SWTIME="|help,<WA>|0.5,<WB>|1,<WC>|2,<WD>|3,<WE>|4,<WF>|5,<WG>|6,<WH>|7,<WI>|8,<WJ>|9,<WK>|10,<WL>|11,<WM>|12,<WN>|13"
-SWTIME="$SWTIME,<WO>|14,<WP>|15,<WQ>|16,<WR>|17,<WS>|18,<WT>|19,<WU>|20,<WV>|21,<WW>|22,<WX>|23,<WY>|24,<WZ>|25"
-LSWTIME=27
+SWTIME="$SWTIME,<WO>|14,<WP>|15,<WQ>|16,<WR>|17,<WS>|18,<WT>|19,<WU>|20,<WV>|21,<WW>|22,<WX>|23,<WY>|24,<WZ>|25,|"
+LSWTIME=28
 
 # Bell tags, by 0.5 seconds increment (optional)
 SBELL="|help,<BA>|0.5,<BB>|1,<BC>|1.5,<BD>|2,<BE>|2.5,<BF>|3,<BG>|3.5,<BH>|4,<BI>|4.5,<BJ>|5,<BK>|5.5,<BL>|6,<BM>|6.5"
@@ -146,10 +147,10 @@ skipcolumns ()
     test -z "$1" || printf "<N%.2X>" $1
 }
 
-# Make a text page. Add some color and a font before the text.
+# Make a text page. Add the bell, the skip tag, some color and a font before the text.
 textpage ()
 {
-    echo -n "$(skipcolumns $SKIPCOL)$(gettag $SCOLOR $SCOLORTAG)$(gettag $SFONT $FONTTAG)$1"
+    echo -n "$(gettag $SBELL $MYBELL)$(skipcolumns $SKIPCOL)$(gettag $SCOLOR $SCOLORTAG)$(gettag $SFONT $FONTTAG)$1"
 }
 
 #Parameter list:
@@ -206,7 +207,8 @@ usage ()
  Page data:
     -p N	Page number (A-Z) Mandatory parameter.
     -i anim	Define the opening animation of the page. Random intro if not specified. (use -i help for options)
-    -w N	wait time, from 0.5 second to 25 seconds. Default is $(gettagtext $SWTIME $WTIME)
+    -b N	Ring the bell for N seconds (0.5 to 13 seconds with 0.5 seconds increment)
+    -w N	wait time, from 0.5 second to 25 seconds.
     -o anim	Define the closing animation of the page. Random outtro if not specified. (use -o help for options)
     -l N	Line number, default is $SLINE
     -c color	Set text color. Random if not specified (use -c help for options)
@@ -216,7 +218,6 @@ usage ()
     -g DATA	Graphic block to display (not implemented)
     -k		Insert clock (not implemented)
     -d		Insert date (not implemented)
-    -b N	Ring the bell for N seconds (0.5 to 13 seconds with 0.5 seconds increment) (not implemented)
     -R		Treat input data as raw page message data. (not implemented)
 "
  exit 1
@@ -224,7 +225,7 @@ usage ()
 
 parse_arguments ()
 {
-    while getopts ":hA:p:i:w:o:FTRD:l:K:c:f:t:s:" OPTION
+    while getopts ":hA:p:i:w:o:FTRD:l:K:c:f:t:s:b:" OPTION
     do
 	case "$OPTION" in
 	    A)	ADDR="$OPTARG"		;;	# OK
@@ -244,6 +245,7 @@ parse_arguments ()
 	    t)	MYTEXT="$OPTARG"; echo "$OPTARG"	;;
 	    R)	echo "-R $OPTARG"	;;
 	    s)	SKIPCOL="$OPTARG"	;;
+	    b)	MYBELL="$(gettagindex $SBELL $OPTARG $LSBELL)"		;;
 	    h|\?|*)	usage		;;
 	esac
     done
