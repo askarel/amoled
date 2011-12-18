@@ -23,7 +23,7 @@
 ME=$(basename $0)
 # some default values
 SERIALPORT="/dev/ttyUSB0"
-WTIME="28"	# Use default display wait time
+WTIME="4"	# Sign wait time for one page
 ADDR="1"	# Sign address
 SLINE="1"	# Line on the display
 FONTTAG="7"	# Use default display font
@@ -58,8 +58,8 @@ LSFONT=7
 # Wait tags
 # A: 0.5 seconds, Z: 25 seconds. (optional, but the sign will wait 0.5 seconds without the tag)
 SWTIME="|help,<WA>|0.5,<WB>|1,<WC>|2,<WD>|3,<WE>|4,<WF>|5,<WG>|6,<WH>|7,<WI>|8,<WJ>|9,<WK>|10,<WL>|11,<WM>|12,<WN>|13"
-SWTIME="$SWTIME,<WO>|14,<WP>|15,<WQ>|16,<WR>|17,<WS>|18,<WT>|19,<WU>|20,<WV>|21,<WW>|22,<WX>|23,<WY>|24,<WZ>|25,|"
-LSWTIME=28
+SWTIME="$SWTIME,<WO>|14,<WP>|15,<WQ>|16,<WR>|17,<WS>|18,<WT>|19,<WU>|20,<WV>|21,<WW>|22,<WX>|23,<WY>|24,<WZ>|25"
+LSWTIME=27
 
 # Bell tags, by 0.5 seconds increment (optional)
 SBELL="|help,<BA>|0.5,<BB>|1,<BC>|1.5,<BD>|2,<BE>|2.5,<BF>|3,<BG>|3.5,<BH>|4,<BI>|4.5,<BJ>|5,<BK>|5.5,<BL>|6,<BM>|6.5"
@@ -208,7 +208,7 @@ usage ()
     -p N	Page number (A-Z) Mandatory parameter.
     -i anim	Define the opening animation of the page. Random intro if not specified. (use -i help for options)
     -b N	Ring the bell for N seconds (0.5 to 13 seconds with 0.5 seconds increment)
-    -w N	wait time, from 0.5 second to 25 seconds.
+    -w N	wait time, from 0.5 second to 25 seconds. Default is $(gettagtext $SWTIME $WTIME).
     -o anim	Define the closing animation of the page. Random outtro if not specified. (use -o help for options)
     -l N	Line number, default is $SLINE
     -c color	Set text color. Random if not specified (use -c help for options)
