@@ -66,6 +66,14 @@ SBELL="|help,<BA>|0.5,<BB>|1,<BC>|1.5,<BD>|2,<BE>|2.5,<BF>|3,<BG>|3.5,<BH>|4,<BI
 SBELL="$SBELL,<BN>|7,<BO>|7.5,<BP>|8,<BQ>|8.5,<BR>|9,<BS>|9.5,<BT>|10,<BU>|10.5,<BV>|11,<BW>|11.5,<BX>|12,<BY>|12.5,<BZ>|13,|"
 LSBELL=28
 
+# Method tag matrix. Still need to figure out how to calculate the deltas. (mandatory)
+# speed		solid	blinking	song1	song2	song3
+# fast		<MA>	<MB>		<MC>	<MD>	<ME>
+#		<MQ>	<MR>		<MS>	<MT>	<MU>
+#		<Ma>	<Mb>		<Mc>	<Md>	<Me>
+# slow		<Mq>	<Mr>		<Ms>	<Mt>	<Mu>
+SMETHOD="<MA>|,<MB>|,<MC>|,<MD>|,<ME>|,<MQ>|,<MR>|,<MS>|,<MT>|,<MU>|,<Ma>|,<Mb>|,<Mc>|,<Md>|,<Me>|,<Mq>|,<Mr>|,<Ms>|,<Mt>|,<Mu>|"
+
 # Function to call when we bail out
 die ()
 {
